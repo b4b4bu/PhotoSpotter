@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SpotSource {
+  FLICKR
+  FIVEHUNDREDPX
+  OSM
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  favorites UserFavorite[]
+  visits    UserVisit[]
+  searches  RecentSearch[]
+
+  @@map("users")
+}
+
+model Spot {
+  id          String     @id @default(cuid())
+  name        String
+  lat         Float
+  lng         Float
+  source      SpotSource
+  tags        String[]
+  externalUrl String?    @map("external_url")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  favorites UserFavorite[]
+  visits    UserVisit[]
+
+  @@map("spots")
+}
+
+model UserFavorite {
+  userId    String   @map("user_id")
+  spotId    String   @map("spot_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+
+  @@id([userId, spotId])
+  @@map("user_favorites")
+}
+
+model UserVisit {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  spotId      String   @map("spot_id")
+  visitedDate DateTime @map("visited_date")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+
+  @@map("user_visits")
+}
+
+model RecentSearch {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  query      String
+  searchedAt DateTime @default(now()) @map("searched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("recent_searches")
+}
